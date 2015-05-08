@@ -2,22 +2,22 @@
 
 ## Prepare
 
-### install virtualenv and create the virtual environment.
+* install virtualenv and create the virtual environment.
 
-```sh
-pip install virtualenv
-virtualenv ./env/  # create the new environment
-./env/Scripts/activate # activate the new context
-```
+  ```sh
+  pip install virtualenv
+  virtualenv ./env/  # create the new environment
+  ./env/Scripts/activate # activate the new context
+  ```
 
-### install all of dependencies
+* install all of dependencies
 
-```sh
-pip install -r requirements.txt
-```
+  ```sh
+  pip install -r requirements.txt
+  ```
 
-### test, deploy and more
+* test, deploy and more
 
-```sh
-pyb install_dependencies publish
-```
+  ```sh
+  pyb install_dependencies publish
+  ```
