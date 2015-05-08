@@ -1,3 +1,4 @@
 certifi==2015.4.28
 pybuilder==0.10.59
 tornado==4.1
+asyncmongo==1.3
