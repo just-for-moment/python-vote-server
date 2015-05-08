@@ -17,3 +17,7 @@ def set_properties(project):
     project.set_property("dir_source_main_python", "src/")
     project.set_property("dir_source_unittest_python", "test")
     project.set_property("dir_source_main_scripts", "scripts")
+
+@init
+def initialize(project):
+    project.depends_on_requirements("requirements.txt")
