@@ -1,6 +1,22 @@
 from .motor_client import motor_client
 from tornado import gen
 from tornado.concurrent import Future
+from motor import MotorCursor
+
+class UserCursor(MotorCursor):
+
+    def __init__(self, Model, cursor, collection):
+        self.Model = Model
+        super(MotorCursor, self).__init__(cursor, collection)
+
+    def each(self, callback):
+        @gen.coroutine
+        def create_callback(result, err):
+            if err:
+                return callback(None, err)
+            model = yield self.Model.create(doc)
+            callback(model, None)
+        super(UserCursor, self).each(callback=create_callback)
 
 class User:
     collection = motor_client.vote_db.user
@@ -8,11 +24,13 @@ class User:
     def __init__(self, **kwargs):
         self.is_inserted = False
         self.dirty_fields = {}
+        self._id = None
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
+    @classmethod
     @gen.coroutine
-    def create(doc):
+    def create(ctx, doc):
         """Create the User instance with doc
 
         :arg dict doc: The key-value pair that used to initialize the new
@@ -21,6 +39,11 @@ class User:
         user = User(**doc)
         yield user.save()
         return user
+
+    @classmethod
+    def find(ctx, *args, **kwargs):
+        cursor = User.collection.delegate.find(*args, **kwargs)
+        return UserCursor(User, cursor, User.collection)
 
     @gen.coroutine
     def save(self):
@@ -39,6 +62,10 @@ class User:
             object_id = yield collection.insert(self.dirty_fields)
             self.is_inserted = True
             self._id = object_id
+
+    def remove(self):
+        if self.id is not None:
+            return User.collection.remove({'_id': self.id})
 
     @property
     def id(self):

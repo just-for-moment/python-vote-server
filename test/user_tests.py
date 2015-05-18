@@ -28,6 +28,22 @@ class DBUserTestCase(AsyncTestCase):
         yield user.save()
         yield user.save()
 
+        yield user.remove()
+
+    @gen_test
+    def test_create(self):
+        user = yield User.create({'username': 'user', 'password': 'pass'})
+        self.assertTrue(user.id)
+
+        # User.collection.delegate.find({'_id': user.id})
+        cursor = User.find({'_id': user.id})
+
+        def each_callback(result, err):
+            print(result.username)
+            self.assertEqual(user.username, result.username)
+
+        cursor.each(callback=each_callback)
+
     def tearDown(self):
         User.collection.remove()
         self.motor_client.close()
