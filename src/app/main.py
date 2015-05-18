@@ -1,6 +1,6 @@
 from tornado.ioloop import IOLoop
 from tornado.web import Application
-from handler.route import router
+from .route import router
 
 def main():
     app = Application(router)
