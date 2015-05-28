@@ -1,7 +1,7 @@
 from .motor_client import motor_client
 from tornado import gen
 from tornado.concurrent import Future
-from motor import MotorCursor, motor_coroutine
+from motor import MotorCursor
 
 
 class UserCursor(MotorCursor):
@@ -10,12 +10,14 @@ class UserCursor(MotorCursor):
         super(MotorCursor, self).__init__(cursor, collection)
 
     def each(self, callback):
-        @gen.coroutine
         def create_callback(result, err):
             if err:
                 return callback(None, err)
-            model = yield self.Model.create(result)
-            callback(model, None)
+            if result is not None:
+                model = self.Model(result)
+                callback(model, None)
+            else:
+                callback(None, None)
         super(UserCursor, self).each(callback=create_callback)
 
     # @motor_coroutine
@@ -23,20 +25,24 @@ class UserCursor(MotorCursor):
         future = Future()
 
         @gen.coroutine
-        def create_list(records, err):
+        def create_list(docs, err):
             if err:
                 return future.set_exception(err)
-            list = yield [self.Model.create(record) for record in records]
+            list = [self.Model(doc) for doc in docs]
             future.set_result(list)
 
         super(UserCursor, self).to_list(length, callback=create_list)
         return future
 
+    def next_object(self):
+        doc = super(UserCursor, self).next_object()
+        return self.Model(doc)
+
 
 class User:
     collection = motor_client.vote_db.user
 
-    def __init__(self, doc):
+    def __init__(self, doc={}):
         self.is_inserted = False
         self.dirty_fields = {}
         self._id = None
