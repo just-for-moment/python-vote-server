@@ -2,6 +2,7 @@ import unittest
 from app.model.user import User
 import motor
 from tornado.testing import AsyncTestCase, gen_test
+from tornado.web import gen
 
 
 class SimpleUserTestCase(unittest.TestCase):
@@ -36,7 +37,6 @@ class DBUserTestCase(AsyncTestCase):
         def create_callback(f):
             user = f.result()
             self.assertTrue(user.id)
-            User.collection.delegate.find({'_id': user.id})
             cursor = User.find({'_id': user.id})
 
             def each_callback(result, error):
@@ -48,7 +48,16 @@ class DBUserTestCase(AsyncTestCase):
         future.add_done_callback(create_callback)
         self.wait()
 
-    def tearDown(self):
-        User.collection.remove()
-        self.motor_client.close()
-        super(DBUserTestCase, self).tearDown()
+    def test_cursor_to_list(self):
+        future = User.create({'username': 'user', 'password': 'pass'})
+
+        @gen.coroutine
+        def create_callback(f):
+            user = f.result()
+            cursor = User.find({'_id': user.id})
+            users = yield cursor.to_list(1)
+            # self.assertEqual(len(users), 1)
+            self.stop()
+
+        future.add_done_callback(create_callback)
+        self.wait()

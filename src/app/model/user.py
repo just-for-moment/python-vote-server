@@ -1,7 +1,7 @@
 from .motor_client import motor_client
 from tornado import gen
 from tornado.concurrent import Future
-from motor import MotorCursor
+from motor import MotorCursor, motor_coroutine
 
 
 class UserCursor(MotorCursor):
@@ -17,6 +17,20 @@ class UserCursor(MotorCursor):
             model = yield self.Model.create(result)
             callback(model, None)
         super(UserCursor, self).each(callback=create_callback)
+
+    # @motor_coroutine
+    def to_list(self, length=1):
+        future = Future()
+
+        @gen.coroutine
+        def create_list(records, err):
+            if err:
+                return future.set_exception(err)
+            list = yield [self.Model.create(record) for record in records]
+            future.set_result(list)
+
+        super(UserCursor, self).to_list(length, callback=create_list)
+        return future
 
 
 class User:
