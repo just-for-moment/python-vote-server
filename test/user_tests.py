@@ -6,9 +6,10 @@ from tornado.testing import AsyncTestCase, gen_test
 
 class SimpleUserTestCase(unittest.TestCase):
     def test_constructor(self):
-        user = User(username='hello', password='pass')
+        user = User({'username': 'hello', 'password': 'pass'})
         self.assertEqual(user.username, 'hello')
         self.assertEqual(user.password, 'pass')
+
 
 class DBUserTestCase(AsyncTestCase):
     def setUp(self):
@@ -18,7 +19,7 @@ class DBUserTestCase(AsyncTestCase):
 
     @gen_test
     def test_save(self):
-        user = User(username='user', password='pass')
+        user = User({'username': 'user', 'password': 'pass'})
         self.assertEqual(user.is_inserted, False)
         yield user.save()
         self.assertEqual(user.is_inserted, True)
@@ -27,22 +28,25 @@ class DBUserTestCase(AsyncTestCase):
         user.username = 'hello'
         yield user.save()
         yield user.save()
-
         yield user.remove()
 
-    @gen_test
     def test_create(self):
-        user = yield User.create({'username': 'user', 'password': 'pass'})
-        self.assertTrue(user.id)
+        future = User.create({'username': 'user', 'password': 'pass'})
 
-        # User.collection.delegate.find({'_id': user.id})
-        cursor = User.find({'_id': user.id})
+        def create_callback(f):
+            user = f.result()
+            self.assertTrue(user.id)
+            User.collection.delegate.find({'_id': user.id})
+            cursor = User.find({'_id': user.id})
 
-        def each_callback(result, err):
-            print(result.username)
-            self.assertEqual(user.username, result.username)
+            def each_callback(result, error):
+                self.assertFalse(error)
+                self.assertEqual(type(result), User)
+                self.stop()
+            cursor.each(callback=each_callback)
 
-        cursor.each(callback=each_callback)
+        future.add_done_callback(create_callback)
+        self.wait()
 
     def tearDown(self):
         User.collection.remove()

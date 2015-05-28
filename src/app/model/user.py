@@ -3,8 +3,8 @@ from tornado import gen
 from tornado.concurrent import Future
 from motor import MotorCursor
 
-class UserCursor(MotorCursor):
 
+class UserCursor(MotorCursor):
     def __init__(self, Model, cursor, collection):
         self.Model = Model
         super(MotorCursor, self).__init__(cursor, collection)
@@ -14,19 +14,20 @@ class UserCursor(MotorCursor):
         def create_callback(result, err):
             if err:
                 return callback(None, err)
-            model = yield self.Model.create(doc)
+            model = yield self.Model.create(result)
             callback(model, None)
         super(UserCursor, self).each(callback=create_callback)
+
 
 class User:
     collection = motor_client.vote_db.user
 
-    def __init__(self, **kwargs):
+    def __init__(self, doc):
         self.is_inserted = False
         self.dirty_fields = {}
         self._id = None
-        for k in kwargs:
-            setattr(self, k, kwargs[k])
+        for k in doc:
+            setattr(self, k, doc[k])
 
     @classmethod
     @gen.coroutine
@@ -36,7 +37,7 @@ class User:
         :arg dict doc: The key-value pair that used to initialize the new
         instance.
         """
-        user = User(**doc)
+        user = User(doc)
         yield user.save()
         return user
 
@@ -50,7 +51,7 @@ class User:
         """Save the User instance into the db
         """
         collection = User.collection
-        if not self.dirty_fields: # dirty_fields is empty
+        if not self.dirty_fields:  # dirty_fields is empty
             future = Future()
             future.set_result(None)
             return future
