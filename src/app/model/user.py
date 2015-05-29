@@ -96,14 +96,14 @@ class User:
     def _add_attr(ctx, name):
         prev_name = '_' + name
 
-        def method():
-            def fget(self):
-                return getattr(self, prev_name)
+        def fget(self):
+            return getattr(self, prev_name)
 
-            def fset(self, value):
-                setattr(self, prev_name, value)
+        def fset(self, value):
+            setattr(self, prev_name, value)
+            self.dirty_fields[name] = value
             return locals()
-        setattr(ctx, name, property(**method()))
+        setattr(ctx, name, property(fget=fget, fset=fset))
 
     @classmethod
     def add_attribute(ctx, *attrs_def):
@@ -122,18 +122,4 @@ class User:
     def id(self):
         return self._id
 
-    @property
-    def username(self):
-        return self._username
-
-    @username.setter
-    def username(self, value):
-        self.dirty_fields['username'] = self._username = value
-
-    @property
-    def password(self):
-        return self._password
-
-    @password.setter
-    def password(self, value):
-        self.dirty_fields['password'] = self._password = value
+User.add_attribute('username', 'password')
