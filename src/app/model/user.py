@@ -66,6 +66,10 @@ class User:
         cursor = User.collection.delegate.find(*args, **kwargs)
         return UserCursor(User, cursor, User.collection)
 
+    @classmethod
+    def find_by_id(ctx, id):
+        return ctx.find({'_id': id})
+
     @gen.coroutine
     def save(self):
         """Save the User instance into the db
@@ -87,6 +91,32 @@ class User:
     def remove(self):
         if self.id is not None:
             return User.collection.remove({'_id': self.id})
+
+    @classmethod
+    def _add_attr(ctx, name):
+        prev_name = '_' + name
+
+        def method():
+            def fget(self):
+                return getattr(self, prev_name)
+
+            def fset(self, value):
+                setattr(self, prev_name, value)
+            return locals()
+        setattr(ctx, name, property(**method()))
+
+    @classmethod
+    def add_attribute(ctx, *attrs_def):
+        if not hasattr(ctx, 'attrs_def'):
+            ctx.attrs_def = {}
+        for attr_def in attrs_def:
+            if isinstance(attr_def, str):
+                name, db_name = attr_def, attr_def
+            else:
+                name = attr_def['name']
+                db_name = attr_def.get('db_name') or name
+            ctx.attrs_def[name] = db_name
+            ctx._add_attr(name)
 
     @property
     def id(self):

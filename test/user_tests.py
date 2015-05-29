@@ -2,8 +2,7 @@ import unittest
 from app.model.user import User
 import motor
 from tornado.testing import AsyncTestCase, gen_test
-from tornado.web import gen
-from tornado.concurrent import Future
+
 
 class SimpleUserTestCase(unittest.TestCase):
     def test_constructor(self):
@@ -48,7 +47,6 @@ class DBUserTestCase(AsyncTestCase):
         cursor = User.find({'_id': user.id})
         users = yield cursor.to_list(1)
         self.assertEqual(len(users), 1)
-
 
     @gen_test
     def test_cursor_fetch_next(self):
